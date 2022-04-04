@@ -1,0 +1,25 @@
+{
+  "name": "com.alteracia.screenplay",
+  "version": "0.0.1",
+  "displayName": "Alteracia.Screenplay",
+  "description": "",
+  "unity": "2017.1",
+  "keywords": [
+    "scene"
+  ],
+  "author": {
+    "name": "Pavel Kazantsev",
+    "email": "kazantsev@alteracia.ru",
+    "url": "alteracia.ru"
+  },
+  "dependencies": {
+    "com.alteracia.altweb": "0.1.1"
+  },
+  "samples": [
+    {
+      "displayName": "Simple Samples",
+      "description": "Create from generic abstract classes",
+      "path": "Samples~"
+    }
+  ]
+}

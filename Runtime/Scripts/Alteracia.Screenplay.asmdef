@@ -1,0 +1,19 @@
+{
+    "name": "Alteracia.Screenplay",
+    "rootNamespace": "",
+    "references": [
+        "GUID:842a5b24999094edf8cc355439c5e405",
+        "GUID:6200c49bdeb404e41ac61f7c3677e351",
+        "GUID:9e24947de15b9834991c9d8411ea37cf",
+        "GUID:84651a3751eca9349aac36a66bba901b"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
