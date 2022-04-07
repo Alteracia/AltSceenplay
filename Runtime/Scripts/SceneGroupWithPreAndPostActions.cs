@@ -26,7 +26,7 @@ namespace Alteracia.Screenplay
         public enum SceneOperation { Add, Load, Reload }
 
         [Header("Actions")]
-        [SerializeField] private  UnityEvent preActions;
+        [SerializeField] private UnityEvent<string> preActions;
 
         [Space] [SerializeField] private bool repeatPreActionsWhenReplaced;
         
@@ -36,7 +36,7 @@ namespace Alteracia.Screenplay
         [SerializeField] private SceneOperation operation = SceneOperation.Add;
         [SerializeField] private bool active;
         [Space]
-        [SerializeField] private  UnityEvent postActions;
+        [SerializeField] private  UnityEvent<string> postActions;
         
         [NonSerialized] private bool _canceled;
         [NonSerialized] private bool _executed;
@@ -46,8 +46,7 @@ namespace Alteracia.Screenplay
 
         public async Task Execute()
         {
-            // Should we block this actions in case: scene loading -- scene changed -- executing with new scene?
-            if (repeatPreActionsWhenReplaced || !Replaced) preActions.Invoke();
+            if (repeatPreActionsWhenReplaced || !Replaced) preActions.Invoke(SceneName);
             
             _canceled = false;
             _executed = true;
@@ -79,8 +78,8 @@ namespace Alteracia.Screenplay
                 SceneLoadingUtils.ActivateScene(SceneName);
                 await AltTasks.WaitFrames(1);
             }
-
-            postActions.Invoke();
+            // TODO Add options as in pre
+            postActions.Invoke(SceneName);
         }
 
         private List<string> _oldScenes = new List<string>();
