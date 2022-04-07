@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 using UnityEngine;
@@ -21,32 +22,35 @@ namespace Alteracia.Screenplay
     [Serializable]
     public class SceneGroupWithPreAndPostActions : NestedScriptableObject, ISceneActionGroup
     {
+        public string Name => this.name;
         public enum SceneOperation { Add, Load, Reload }
 
         [Header("Actions")]
         [SerializeField] private  UnityEvent preActions;
-        [Space]
+
+        [Space] [SerializeField] private bool repeatPreActionsWhenReplaced;
         
-        [NonSerialized] private string _scene;
+        [NonSerialized] private string _scene; 
         public string SceneName => string.IsNullOrEmpty(_scene) ? this.name : _scene;
         
         [SerializeField] private SceneOperation operation = SceneOperation.Add;
         [SerializeField] private bool active;
         [Space]
         [SerializeField] private  UnityEvent postActions;
-
+        
         [NonSerialized] private bool _canceled;
         [NonSerialized] private bool _executed;
-
-        public string Name => this.name;
+        [NonSerialized] private Task _execution;
+        [NonSerialized] private bool _replaced;
+        public bool Replaced => _replaced;
 
         public async Task Execute()
         {
+            // Should we block this actions in case: scene loading -- scene changed -- executing with new scene?
+            if (repeatPreActionsWhenReplaced || !Replaced) preActions.Invoke();
+            
             _canceled = false;
             _executed = true;
-            
-            // Should we block this actions in case: scene loading -- scene changed -- executing with new scene?
-            preActions.Invoke();
 
             SceneLoader loader = SceneLoadingUtils.IsSceneRemote(SceneName)
                 ? new AddressableSceneLoader(SceneName) as SceneLoader
@@ -54,11 +58,15 @@ namespace Alteracia.Screenplay
 
             switch (operation)
             {
-                case SceneOperation.Load: await loader.LoadScene(); break;
-                case SceneOperation.Add: await loader.AddScene(); break;
-                case SceneOperation.Reload: await loader.ReloadScene(); break;
+                case SceneOperation.Load: _execution = loader.LoadScene(); break;
+                case SceneOperation.Add: _execution = loader.AddScene(); break;
+                case SceneOperation.Reload: _execution = loader.ReloadScene(); break;
                 default: throw new ArgumentOutOfRangeException();
             }
+
+            await _execution;
+
+            _execution = null;
             
             if (_canceled || loader.Id != SceneName) // canceled or scene changed
             {
@@ -74,25 +82,46 @@ namespace Alteracia.Screenplay
 
             postActions.Invoke();
         }
-        
+
+        private List<string> _oldScenes = new List<string>();
         public async void Replace(string newSceneId)
         {
             if (newSceneId == SceneName) return;
             
             var update = _executed && operation == SceneOperation.Add; // TODO case if  || operation == SceneOperation.Load =? in cases other scenes added
-            if (update) SceneLoadingUtils.RemoveScene(SceneName);
 
+            var oldScene = SceneName;
+            _oldScenes.Add(oldScene);
+            
             _scene = newSceneId;
 
-            if (update) await Execute();
+            if (!update) return;
+            
+            var id = newSceneId; // TODO check
+
+            if (_execution != null)
+            {
+                await _execution;
+                if (_scene != id || _canceled)
+                {
+                    SceneLoadingUtils.RemoveScene(oldScene); // TODO Check
+                    return; // Scene was replaced again
+                }
+            }
+
+            _replaced = true;
+            await Execute();
+            SceneLoadingUtils.RemoveScene(oldScene);
         }
 
         public void Cancel()
         {
             _executed = false;
+            _replaced = false;
             
             if (operation != SceneOperation.Reload) SceneLoadingUtils.RemoveScene(SceneName);
-            
+            if (_oldScenes.Count != 0) foreach (var scene in _oldScenes) SceneLoadingUtils.RemoveScene(scene);
+            _oldScenes.Clear();
             _canceled = true;
         }
     }

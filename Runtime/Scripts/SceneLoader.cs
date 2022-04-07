@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 using UnityEngine.AddressableAssets;
@@ -9,10 +10,25 @@ namespace Alteracia.Screenplay
 {
     public static class SceneLoadingUtils
     {
+        private static readonly List<string> Loading = new List<string>();
+        
+        public static bool AddLoadingScene(string sceneName)
+        {
+            if (IsLoad(sceneName)) return false;
+            Loading.Add(sceneName);
+            return true;
+        }
+        
+        public static bool IsLoad(string sceneName) => Loading.Contains(sceneName);
+        
         public static void RemoveScene(string id)
         {
+            if (!IsLoad(id) || 
+                !SceneManager.GetSceneByName(id).isLoaded) // Case when scene was not loaded yet
+                return;
+            
             SceneManager.UnloadSceneAsync(id);
-            // TODO test case: scene not loaded yet
+            Loading.Remove(id);
         }
         
         public static bool IsSceneRemote(string id)
@@ -61,12 +77,16 @@ namespace Alteracia.Screenplay
 
         public override async Task LoadScene()
         {
+            if (!SceneLoadingUtils.AddLoadingScene(id)) return;
+
             var sceneAsyncOperation = Addressables.LoadSceneAsync(id);
             await sceneAsyncOperation.Task;
         }
 
         public override async Task AddScene()
         {
+            if (!SceneLoadingUtils.AddLoadingScene(id)) return;
+            
             var sceneAsyncOperation = Addressables.LoadSceneAsync(id, LoadSceneMode.Additive);
             await sceneAsyncOperation.Task;
         }
@@ -78,12 +98,16 @@ namespace Alteracia.Screenplay
 
         public override async Task LoadScene()
         {
+            if (!SceneLoadingUtils.AddLoadingScene(id)) return;
+            
             var sceneAsyncOperation = SceneManager.LoadSceneAsync(id);
             await AltTasks.WaitWhile(() => !sceneAsyncOperation.isDone);
         }
 
         public override async Task AddScene()
         {
+            if (!SceneLoadingUtils.AddLoadingScene(id)) return;
+            
             var sceneAsyncOperation = SceneManager.LoadSceneAsync(id, LoadSceneMode.Additive);
             await AltTasks.WaitWhile(() => !sceneAsyncOperation.isDone);
         }
