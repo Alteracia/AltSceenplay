@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -52,12 +53,15 @@ namespace Alteracia.Screenplay
     
     public abstract class SceneLoader
     {
+        protected readonly Action<float> onLoadingProgress;
+        
         protected string id;
         public string Id => id;
 
-        protected SceneLoader(string sceneName)
+        protected SceneLoader(string sceneName, Action<float> loadingProgress)
         {
             id = sceneName;
+            this.onLoadingProgress = loadingProgress;
         }
 
         public abstract Task LoadScene();
@@ -73,14 +77,19 @@ namespace Alteracia.Screenplay
 
     public class AddressableSceneLoader : SceneLoader
     {
-        public AddressableSceneLoader(string sceneName) : base(sceneName) { }
+        public AddressableSceneLoader(string sceneName, Action<float> progress) : base(sceneName, progress) { }
 
         public override async Task LoadScene()
         {
             if (!SceneLoadingUtils.AddLoadingScene(id)) return;
 
             var sceneAsyncOperation = Addressables.LoadSceneAsync(id);
-            await sceneAsyncOperation.Task;
+            while (!sceneAsyncOperation.IsDone)
+            {
+                onLoadingProgress?.Invoke(sceneAsyncOperation.PercentComplete);
+                await Task.Yield();
+            }
+            onLoadingProgress?.Invoke(1f);
         }
 
         public override async Task AddScene()
@@ -88,20 +97,32 @@ namespace Alteracia.Screenplay
             if (!SceneLoadingUtils.AddLoadingScene(id)) return;
             
             var sceneAsyncOperation = Addressables.LoadSceneAsync(id, LoadSceneMode.Additive);
-            await sceneAsyncOperation.Task;
+            while (!sceneAsyncOperation.IsDone)
+            {
+                onLoadingProgress?.Invoke(sceneAsyncOperation.PercentComplete);
+                await Task.Yield();
+            }
+            onLoadingProgress?.Invoke(1f);
+            //await sceneAsyncOperation.Task;
         }
     }
 
     public class BuildInSceneLoader : SceneLoader
     {
-        public BuildInSceneLoader(string sceneName) : base(sceneName) { }
+        public BuildInSceneLoader(string sceneName, Action<float> progress) : base(sceneName, progress) { }
 
         public override async Task LoadScene()
         {
             if (!SceneLoadingUtils.AddLoadingScene(id)) return;
             
             var sceneAsyncOperation = SceneManager.LoadSceneAsync(id);
-            await AltTasks.WaitWhile(() => !sceneAsyncOperation.isDone);
+            while (!sceneAsyncOperation.isDone)
+            {
+                onLoadingProgress?.Invoke(sceneAsyncOperation.progress);
+                await Task.Yield();
+            }
+            onLoadingProgress?.Invoke(1f);
+            // await AltTasks.WaitWhile(() => !sceneAsyncOperation.isDone);
         }
 
         public override async Task AddScene()
@@ -109,7 +130,13 @@ namespace Alteracia.Screenplay
             if (!SceneLoadingUtils.AddLoadingScene(id)) return;
             
             var sceneAsyncOperation = SceneManager.LoadSceneAsync(id, LoadSceneMode.Additive);
-            await AltTasks.WaitWhile(() => !sceneAsyncOperation.isDone);
+            while (!sceneAsyncOperation.isDone)
+            {
+                onLoadingProgress?.Invoke(sceneAsyncOperation.progress);
+                await Task.Yield();
+            }
+            onLoadingProgress?.Invoke(1f);
+            //await AltTasks.WaitWhile(() => !sceneAsyncOperation.isDone);
         }
     }
 

@@ -12,6 +12,7 @@ namespace Alteracia.Screenplay
 {
     public interface ISceneActionGroup
     {
+        Action<float> OnLoadingProgress { get; set; }
         string Name { get; }
         Task Execute();
         void Replace(string newSceneId);
@@ -22,6 +23,13 @@ namespace Alteracia.Screenplay
     [Serializable]
     public class SceneGroupWithPreAndPostActions : NestedScriptableObject, ISceneActionGroup
     {
+        private Action<float> _onLoadingProgress;
+        public  Action<float> OnLoadingProgress
+        {
+            get => _onLoadingProgress;
+            set => _onLoadingProgress = value;
+        }
+
         public string Name => this.name;
         public enum SceneOperation { Add, Load, Reload }
 
@@ -52,8 +60,8 @@ namespace Alteracia.Screenplay
             _executed = true;
 
             SceneLoader loader = SceneLoadingUtils.IsSceneRemote(SceneName)
-                ? new AddressableSceneLoader(SceneName) as SceneLoader
-                : new BuildInSceneLoader(SceneName) as SceneLoader;
+                ? new AddressableSceneLoader(SceneName, _onLoadingProgress) as SceneLoader
+                : new BuildInSceneLoader(SceneName, _onLoadingProgress) as SceneLoader;
 
             switch (operation)
             {
@@ -83,6 +91,7 @@ namespace Alteracia.Screenplay
         }
 
         private List<string> _oldScenes = new List<string>();
+
         public async void Replace(string newSceneId)
         {
             if (newSceneId == SceneName) return;
