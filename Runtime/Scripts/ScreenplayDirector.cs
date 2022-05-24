@@ -12,8 +12,9 @@ namespace Alteracia.Screenplay
         [NonSerialized] private List<Screenplay> _screenplays = new List<Screenplay>();
         public Screenplay[] Screenplays => _screenplays.Count == 0 ? screenplays : _screenplays.ToArray();
         
-        [NonSerialized] private readonly List<Screenplay[]> _saved = new List<Screenplay[]>();
-        public int SavedCount => _saved.Count;
+        [NonSerialized] private readonly Dictionary<string, List<Screenplay[]>> _saved = new Dictionary<string, List<Screenplay[]>>();
+        public int SavedCount(string groupId) => _saved[groupId].Count;
+        
         
         public void Execute(string screenplay)
         {
@@ -21,27 +22,31 @@ namespace Alteracia.Screenplay
             Screenplays.First(s => s.name == screenplay).Execute();
         }
 
-        public void SaveState()
+        public void SaveState(string groupId)
         {
-            _saved.Add(Screenplays.Where(s => s.Executed).ToArray());
+           // Debug.Log("saving state for " + groupId);
+            if (!_saved.ContainsKey(groupId)) _saved[groupId] = new List<Screenplay[]>();
+            _saved[groupId].Add(Screenplays.Where(s => s.Executed).ToArray());
         }
 
-        public void Restore()
-        {
-            if (_saved.Count == 0) return;
+        public void Restore(string groupId)
+        { 
+            //Debug.Log("restore state for " + groupId);
+            if (_saved.Count == 0 || SavedCount(groupId) == 0) return;
         
-            var lastSaved = _saved.Last();
-            _saved.RemoveAt(_saved.Count - 1);
+            var lastSaved = _saved[groupId].Last();
+            _saved[groupId].RemoveAt(SavedCount(groupId) - 1);
         
             RestoreState(lastSaved);
         }
 
-        public void RestoreFirstState()
+        public void RestoreFirstState(string groupId)
         {
-            if (_saved.Count == 0) return;
+          //  Debug.Log("restore first state for " + groupId);
+            if (_saved.Count == 0 || SavedCount(groupId) == 0) return;
         
-            var first = _saved[0];
-            _saved.Clear();
+            var first = _saved[groupId][0];
+            _saved[groupId].Clear();
             
            RestoreState(first);
         }
