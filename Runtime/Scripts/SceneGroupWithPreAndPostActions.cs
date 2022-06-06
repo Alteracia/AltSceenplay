@@ -36,14 +36,16 @@ namespace Alteracia.Screenplay
         [Header("Actions")]
         [SerializeField] private UnityEvent<string> preActions;
 
-        [Space] [SerializeField] private bool repeatPreActionsWhenReplaced;
+        [Space] [SerializeField] private bool repeatPreActionsWhenReplaced; // TODO Deprecate
+        [SerializeField] private UnityEvent<string> preReplaceActions;
         
         [NonSerialized] private string _scene; 
         public string SceneName => string.IsNullOrEmpty(_scene) ? this.name : _scene;
         
+        [Space] 
         [SerializeField] private SceneOperation operation = SceneOperation.Add;
         [SerializeField] private bool active;
-        [Space]
+        [Space][Space] 
         [SerializeField] private  UnityEvent<string> postActions;
         
         [NonSerialized] private bool _canceled;
@@ -54,7 +56,8 @@ namespace Alteracia.Screenplay
 
         public async Task Execute()
         {
-            if (repeatPreActionsWhenReplaced || !Replaced) preActions.Invoke(SceneName);
+            if (repeatPreActionsWhenReplaced || !Replaced) preActions.Invoke(SceneName); // TODO remove preReplaceActions
+            if (Replaced) preReplaceActions.Invoke(SceneName);
             
             _canceled = false;
             _executed = true;

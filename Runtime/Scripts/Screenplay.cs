@@ -4,8 +4,10 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 
 using UnityEngine;
+using UnityEngine.Events;
 
 using Alteracia.Patterns.ScriptableObjects;
+
 
 namespace Alteracia.Screenplay
 {
@@ -13,8 +15,12 @@ namespace Alteracia.Screenplay
     [Serializable]
     public class Screenplay : RootScriptableObject
     {
+        [Space]
         [Tooltip("If screenplay was already executed play it again.")]
         [SerializeField] private bool executeAgain;
+        [Space]
+        [Tooltip("Actions will be called after cancel scenes groups.")]
+        [SerializeField] private UnityEvent<string> cancelActions;
         
         [NonSerialized] private bool _executed;
         public bool Executed => _executed;
@@ -50,6 +56,7 @@ namespace Alteracia.Screenplay
         {
             _executed = false;
             foreach (var group in Nested.Cast<ISceneActionGroup>()) group.Cancel();
+            cancelActions?.Invoke(this.name);
         }
         
 #if UNITY_EDITOR
