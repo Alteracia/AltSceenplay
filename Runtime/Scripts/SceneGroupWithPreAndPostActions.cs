@@ -84,7 +84,7 @@ namespace Alteracia.Screenplay
                 return;
             }
 
-            if (active)
+            if (active && !_replaced) // Do not activate if scene is replaced Will activate after removing scene
             {
                 SceneLoadingUtils.ActivateScene(SceneName);
                 await AltTasks.WaitFrames(1);
@@ -123,6 +123,8 @@ namespace Alteracia.Screenplay
             _replaced = true;
             await Execute();
             SceneLoadingUtils.RemoveScene(oldScene);
+            if (_canceled) return;
+            if (active) SceneLoadingUtils.ActivateScene(SceneName);
         }
 
         public void Cancel()
