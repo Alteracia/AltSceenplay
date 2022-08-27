@@ -46,8 +46,11 @@ namespace Alteracia.Screenplay
         public static void ActivateScene(string id)
         {
             if (string.IsNullOrEmpty(id) || id == SceneManager.GetActiveScene().name) return;
-            
-            SceneManager.SetActiveScene(SceneManager.GetSceneByName(id));
+
+            var scene = SceneManager.GetSceneByName(id);
+            if(scene.isLoaded == false)
+                return;
+            SceneManager.SetActiveScene(scene);
         }
     }
     
